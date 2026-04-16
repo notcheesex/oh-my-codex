@@ -584,6 +584,14 @@ function containsHardFailure(text: string): boolean {
   return /command not found|permission denied|no such file or directory/i.test(text);
 }
 
+function hasBashSetupFailure(
+  normalized: NormalizedPostToolUsePayload,
+): boolean {
+  if (!normalized.stderrText) return false;
+  if (normalized.exitCode === 0) return false;
+  return containsHardFailure(normalized.stderrText);
+}
+
 export function buildNativePostToolUseOutput(
   payload: CodexHookPayload,
 ): Record<string, unknown> | null {
@@ -608,7 +616,7 @@ export function buildNativePostToolUseOutput(
   if (!normalized.isBash) return null;
 
   const combined = `${normalized.stderrText}\n${normalized.stdoutText}`.trim();
-  if (containsHardFailure(combined)) {
+  if (hasBashSetupFailure(normalized)) {
     return {
       decision: "block",
       reason: "The Bash output indicates a command/setup failure that should be fixed before retrying.",

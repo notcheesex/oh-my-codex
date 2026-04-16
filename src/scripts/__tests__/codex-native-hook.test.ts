@@ -1422,6 +1422,32 @@ esac
     }
   });
 
+  it("does not block PostToolUse when only Bash stdout mentions shell-failure text", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "omx-native-hook-posttool-stdout-only-"));
+    try {
+      const result = await dispatchCodexNativeHook(
+        {
+          hook_event_name: "PostToolUse",
+          cwd,
+          tool_name: "Bash",
+          tool_use_id: "tool-stdout-only",
+          tool_input: { command: "cat docs/example.txt" },
+          tool_response: JSON.stringify({
+            exit_code: 0,
+            stdout: "Example text mentioning command not found for documentation purposes.",
+            stderr: "",
+          }),
+        },
+        { cwd },
+      );
+
+      assert.equal(result.omxEventName, "post-tool-use");
+      assert.equal(result.outputJson, null);
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("returns PostToolUse MCP transport fallback guidance for clear MCP transport death", async () => {
     const cwd = await mkdtemp(join(tmpdir(), "omx-native-hook-posttool-mcp-transport-"));
     try {
